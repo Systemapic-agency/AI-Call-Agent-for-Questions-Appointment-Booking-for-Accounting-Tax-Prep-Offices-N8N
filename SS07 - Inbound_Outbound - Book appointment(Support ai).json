@@ -115,7 +115,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer pit-1bb9356d-79e4-410d-a370-be52ea8d36f9"
+              "value": "Bearer "
             },
             {
               "name": "Version",
@@ -150,7 +150,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer pit-1bb9356d-79e4-410d-a370-be52ea8d36f9"
+              "value": "Bearer "
             },
             {
               "name": "Version",
@@ -193,7 +193,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer pit-1bb9356d-79e4-410d-a370-be52ea8d36f9"
+              "value": "Bearer "
             },
             {
               "name": "Version",
@@ -404,7 +404,8 @@
             "call": {
               "call_id": "call_b2c8a266ebf30cd7f66d915f479",
               "call_type": "phone_call",
-              "agent_id": "agent_61779d9742f881f3a8bd5d4cb0",
+              "agent_id": "agent_
+                ",
               "agent_version": 0,
               "agent_name": "Inbound - Chiropractors & Physiotherapists",
               "retell_llm_dynamic_variables": {
@@ -419,7 +420,7 @@
               },
               "call_status": "ongoing",
               "start_timestamp": 1760121231010,
-              "transcript": "Agent: Thank you for calling our Chiropractic & Physiotherapy Clinic. How can I assist you today?\nUser: Okay. So I would like to get appointment for the acupuncture.\nAgent: Thank you for your interest in booking an acupuncture appointment with us.\n\nCan I have your full name, please?\nUser: My name is Saad Resvan.\nAgent: Thanks, Saad Resvan! Could you share your phone number?\nUser: Of course. It's nine two nine five eight nine three one one eight.\nAgent: Got it. What’s your email address?\nUser: So it's work dot rizwan at g mail dot com.\nAgent: Thank you. Are you a new patient or an existing one?\nUser: You tell me.\nAgent: I don’t have access to our patient records at the moment, so could you please let me know if you’ve visited our clinic before or if this will be your first time?\nUser: Okay. So this is, uh, my first time actually\nAgent: Thank you for letting me know, Saad. Could you tell me the reason for your visit—such as any specific pain area, injury type, or concern you’d like addressed with acupuncture?\nUser: Yeah. I have you know, facing problem in my neck. Due to a bad posture.\nAgent: Thank you for sharing that. Lastly, what date and time would you prefer for your appointment?\nUser: I would like to do this this weekend, if that works. Or earliest as possible.\nAgent: Thank you. To clarify, would you prefer Saturday or Sunday? And is there a specific time of day that works best for you—morning, afternoon, or evening?\nUser: Let's do Saturday evening.\nAgent: Thank you. Just to confirm, here are the details I have:\n\n- Name: Saad Resvan\n- Phone number: 929-589-3118\n- Email: work.rizwan@gmail.com\n- You are a new patient\n- Reason for visit: Neck problem due to bad posture, seeking acupuncture\n- Preferred appointment: Saturday evening\n\nIs all of this correct?\nUser: Yep.\nUser: It's absolutely correct.\nAgent: Perfect!\nAgent:  Let me check \nAgent: our availability for Saturday evening.Thank you for waiting. I’m checking our availability for Saturday evening. One moment, please.\nUser: Okay.\nAgent: It appears that Saturday evening may be fully booked. Would you be open to another time on Saturday, or perhaps Sunday? If you have a specific time in mind, please let me know and I’ll check availability for you.\nUser: Okay. So let's do Tuesday at six PM.\nAgent: Thank \nUser: If that works.\nAgent: Thank you, Saad. Let me check our availability for Tuesday at 6 PM. One moment, please.\nAgent: Just checking in, Saad—would you like to go ahead and book the acupuncture appointment for Tuesday at 6 PM? If that works for you, I’ll reserve the spot right away.\nUser: Okay. Let's do it.\n",
+              "transcript": "Agent: Thank you for calling our Chiropractic & Physiotherapy Clinic. How can I assist you today?\nUser: Okay. So I would like to get appointment for the acupuncture.\nAgent: Thank you for your interest in booking an acupuncture appointment with us.\n\nCan I have your full name, please?\nUser: My name is Saad Resvan.\nAgent: Thanks, Saad Resvan! Could you share your phone number?\nUser: Of course. It's nine two nine five eight nine three one one eight.\nAgent: Got it. What’s your email address?\nUser: So it's work dot rizwan at g mail dot com.\nAgent: Thank you. Are you a new patient or an existing one?\nUser: You tell me.\nAgent: I don’t have access to our patient records at the moment, so could you please let me know if you’ve visited our clinic before or if this will be your first time?\nUser: Okay. So this is, uh, my first time actually\nAgent: Thank you for letting me know, Saad. Could you tell me the reason for your visit—such as any specific pain area, injury type, or concern you’d like addressed with acupuncture?\nUser: Yeah. I have you know, facing problem in my neck. Due to a bad posture.\nAgent: Thank you for sharing that. Lastly, what date and time would you prefer for your appointment?\nUser: I would like to do this this weekend, if that works. Or earliest as possible.\nAgent: Thank you. To clarify, would you prefer Saturday or Sunday? And is there a specific time of day that works best for you—morning, afternoon, or evening?\nUser: Let's do Saturday evening.\nAgent: Thank you. Just to confirm, here are the details I have:\n\n- Name: Saad Resvan\n- Phone number: 929-589-3118\n- Email:\n- You are a new patient\n- Reason for visit: Neck problem due to bad posture, seeking acupuncture\n- Preferred appointment: Saturday evening\n\nIs all of this correct?\nUser: Yep.\nUser: It's absolutely correct.\nAgent: Perfect!\nAgent:  Let me check \nAgent: our availability for Saturday evening.Thank you for waiting. I’m checking our availability for Saturday evening. One moment, please.\nUser: Okay.\nAgent: It appears that Saturday evening may be fully booked. Would you be open to another time on Saturday, or perhaps Sunday? If you have a specific time in mind, please let me know and I’ll check availability for you.\nUser: Okay. So let's do Tuesday at six PM.\nAgent: Thank \nUser: If that works.\nAgent: Thank you, Saad. Let me check our availability for Tuesday at 6 PM. One moment, please.\nAgent: Just checking in, Saad—would you like to go ahead and book the acupuncture appointment for Tuesday at 6 PM? If that works for you, I’ll reserve the spot right away.\nUser: Okay. Let's do it.\n",
               "transcript_object": [
                 {
                   "role": "agent",
@@ -1808,7 +1809,7 @@
                 },
                 {
                   "role": "agent",
-                  "content": "Thank you. Just to confirm, here are the details I have:\n\n- Name: Saad Resvan\n- Phone number: \n- Email: work.rizwan@gmail.com\n- You are a new patient\n- Reason for visit: Neck problem due to bad posture, seeking acupuncture\n- Preferred appointment: Saturday evening\n\nIs all of this correct?",
+                  "content": "Thank you. Just to confirm, here are the details I have:\n\n- Name: Saad Resvan\n- Phone number: \n- Email: \n- You are a new patient\n- Reason for visit: Neck problem due to bad posture, seeking acupuncture\n- Preferred appointment: Saturday evening\n\nIs all of this correct?",
                   "words": [
                     {
                       "word": "Thank ",
@@ -4203,7 +4204,7 @@
                 },
                 {
                   "role": "agent",
-                  "content": "Thank you. Just to confirm, here are the details I have:\n\n- Name: Saad Resvan\n- Phone number: \n- Email: work.rizwan@gmail.com\n- You are a new patient\n- Reason for visit: Neck problem due to bad posture, seeking acupuncture\n- Preferred appointment: Saturday evening\n\nIs all of this correct?",
+                  "content": "Thank you. Just to confirm, here are the details I have:\n\n- Name: Saad Resvan\n- Phone number: \n- Email: \n- You are a new patient\n- Reason for visit: Neck problem due to bad posture, seeking acupuncture\n- Preferred appointment: Saturday evening\n\nIs all of this correct?",
                   "words": [
                     {
                       "word": "Thank ",
@@ -5288,7 +5289,7 @@
                   "role": "tool_call_invocation",
                   "tool_call_id": "7f54d19ff0992230",
                   "name": "book_appointment",
-                  "arguments": "{\"name\":\"Saad Resvan\",\"ph_num\":9295893118,\"email\":\"work.rizwan@gmail.com\",\"appointment_datetime\":\"2025-10-14T18:00:00-05:00\",\"service\":\"Acupuncture\",\"execution_message\":\"Booking your acupuncture appointment for Tuesday at 6 PM now.\"}",
+                  "arguments": "{\"name\":\"Saad Resvan\",\"ph_num\":,\"email\":\"work.rizwan@gmail.com\",\"appointment_datetime\":\"2025-10-14T18:00:00-05:00\",\"service\":\"Acupuncture\",\"execution_message\":\"Booking your acupuncture appointment for Tuesday at 6 PM now.\"}",
                   "time_sec": 217.28,
                   "type": "custom"
                 }
@@ -5304,7 +5305,7 @@
               "opt_out_sensitive_data_storage": false,
               "data_storage_setting": "everything",
               "opt_in_signed_url": false,
-              "from_number": "+19295893118",
+              "from_number": "+0000000000",
               "to_number": "+19896629218",
               "direction": "inbound",
               "telephony_identifier": {
@@ -5314,8 +5315,8 @@
             "name": "book_appointment",
             "args": {
               "name": "Saad Resvan",
-              "ph_num": 9295893118,
-              "email": "work.rizwan@gmail.com",
+              "ph_num": ,
+              "email": "",
               "appointment_datetime": "2025-10-14T18:00:00-05:00",
               "service": "Acupuncture"
             }
