@@ -147,3 +147,178 @@ Example:
     }
   }
 }
+
+
+Inbound/Outbound - Book Appointment (Support AI)
+
+An **n8n AI appointment booking workflow** designed for **voice AI assistants**, inbound/outbound support systems, and service-based businesses. This workflow receives appointment booking details through a webhook, checks whether the caller already exists in **GoHighLevel CRM**, creates the contact if needed, and books the appointment directly into the **GoHighLevel calendar**. :contentReference[oaicite:1]{index=1}
+
+---
+
+## Features
+
+- Receives appointment booking requests through **Webhook**
+- Built for **AI voice assistants** and support automation
+- Searches for existing contacts in **GoHighLevel CRM**
+- Automatically creates a new contact if none exists
+- Books confirmed appointments directly in **GoHighLevel Calendar**
+- Handles:
+  - patient/client name
+  - phone number
+  - email
+  - service type
+  - appointment date/time
+- Supports healthcare and service business booking flows
+- Includes fallback error handling for failed contact lookup cases :contentReference[oaicite:2]{index=2}
+
+---
+
+## Workflow Overview
+
+This workflow follows the process below:
+
+1. A voice AI assistant or external system sends booking details to an **n8n Webhook**
+2. The workflow normalizes the appointment date to the current year
+3. It searches **GoHighLevel CRM** for an existing contact using the phone number
+4. The workflow checks the contact search result:
+   - **If contact exists** → directly books the appointment
+   - **If contact does not exist** → creates a new contact first, then books the appointment
+   - **If an unexpected result occurs** → returns an error response
+5. The appointment is created in the **GoHighLevel Calendar** with confirmed status :contentReference[oaicite:3]{index=3}
+
+---
+
+## Nodes Used
+
+### 1. Webhook
+The workflow begins with a **Webhook** node that accepts **POST requests**.
+
+This is typically triggered by:
+
+- AI voice assistants
+- Retell AI workflows
+- support bots
+- appointment booking assistants
+- inbound call systems
+- outbound scheduling flows :contentReference[oaicite:4]{index=4}
+
+---
+
+### 2. Code in JavaScript1
+This node updates the incoming appointment date to the **current year**.
+
+Why this is useful:
+- voice AI tools may pass relative dates or dates without reliable year context
+- this ensures booking data stays aligned with the active scheduling year
+
+It updates:
+
+- `body.args.appointment_date` :contentReference[oaicite:5]{index=5}
+
+---
+
+### 3. Search Contact
+This **HTTP Request** node searches **GoHighLevel CRM** for an existing contact using the phone number.
+
+The workflow checks:
+
+- `body.args.ph_num`
+- or fallback:
+- `body.call.from_number`
+
+This helps prevent duplicate contact creation. :contentReference[oaicite:6]{index=6}
+
+---
+
+### 4. Contact Status (Switch Node)
+This **Switch** node routes the workflow based on the CRM search result.
+
+### Possible outcomes:
+
+#### Not Found
+If no contact exists:
+- the workflow moves to **contact creation flow**
+
+#### Found
+If a contact exists:
+- the workflow skips creation
+- and directly books the appointment
+
+#### Error
+If an unexpected response occurs:
+- the workflow returns a fallback error message :contentReference[oaicite:7]{index=7}
+
+---
+
+## Booking Logic Paths
+
+---
+
+## Path A: Existing Contact Found
+
+### 5. Book Appointment1
+If the contact already exists in GoHighLevel, this node books the appointment directly.
+
+It uses:
+
+- existing `contactId`
+- existing `locationId`
+- requested `appointment_datetime`
+- selected `service`
+
+The appointment is created with:
+
+- `appointmentStatus: confirmed`
+- `ignoreFreeSlotValidation: true` :contentReference[oaicite:8]{index=8}
+
+---
+
+## Path B: Contact Not Found
+
+### 6. If Node
+Before creating a new contact, the workflow checks whether the provided email looks valid.
+
+It checks whether the email contains:
+
+- `@`
+
+This splits the flow into two contact creation paths:
+
+- contact creation **with email**
+- contact creation **without email** :contentReference[oaicite:9]{index=9}
+
+---
+
+### 7. Create a Contact
+If a valid email is available, the workflow creates a new contact in **GoHighLevel CRM** with:
+
+- name
+- email
+- phone
+- location ID
+- tag: `ai_agent` :contentReference[oaicite:10]{index=10}
+
+---
+
+### 8. Book Appointment
+After contact creation with email, the workflow books the appointment directly in the **GoHighLevel calendar**. :contentReference[oaicite:11]{index=11}
+
+---
+
+### 9. Create a Contact1
+If no valid email is available, the workflow creates a new contact **without relying on a valid email format**. :contentReference[oaicite:12]{index=12}
+
+---
+
+### 10. Book Appointment2
+After creating the contact without email validation, the workflow still proceeds to book the appointment. :contentReference[oaicite:13]{index=13}
+
+---
+
+## Error Handling
+
+### 11. Return Error
+If the contact search result is unexpected, the workflow returns this fallback message:
+
+```text id="vkgx1v"
+I apologize; it seems we are having an issue.
