@@ -38,7 +38,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer key_ad6410cd34a6d1252a3c14a0e6bf"
+              "value": "Bearer "
             },
             {
               "name": "Content-Type",
@@ -48,7 +48,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"from_number\": \"+19896629218\",\n  \"to_number\": \"+1{{ $json.Phone }}\",\n  \"call_type\": \"phone_call\",\n  \"retell_llm_dynamic_variables\": {\n    \"name\": \"{{ $json.Name }}\",\n    \"email\": \"{{ $json.Email }}\",\n    \"phone\": \"{{ $json.Phone }}\"\n  },\n  \"override_agent_id\": \"agent_3efec75090afd7461e7753199c\"\n}\n",
+        "jsonBody": "={\n  \"from_number\": \"+1\",\n  \"to_number\": \"+1{{ $json.Phone }}\",\n  \"call_type\": \"phone_call\",\n  \"retell_llm_dynamic_variables\": {\n    \"name\": \"{{ $json.Name }}\",\n    \"email\": \"{{ $json.Email }}\",\n    \"phone\": \"{{ $json.Phone }}\"\n  },\n  \"override_agent_id\": \"agent_3efec75090afd7461e7753199c\"\n}\n",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
