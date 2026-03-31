@@ -322,3 +322,112 @@ If the contact search result is unexpected, the workflow returns this fallback m
 
 ```text id="vkgx1v"
 I apologize; it seems we are having an issue.
+
+
+
+# Create Outbound Call When Contact Added into GHL (Support AI)
+
+An **n8n outbound calling automation workflow** that captures lead details through a form, waits for processing, and then automatically triggers an **AI-powered outbound phone call** using **Retell AI**. This workflow is useful for support teams, appointment follow-ups, lead qualification, and AI voice outreach systems. :contentReference[oaicite:1]{index=1}
+
+---
+
+## Features
+
+- Collects lead/contact details through an **n8n Form**
+- Supports:
+  - Name
+  - Email
+  - Phone Number
+- Automatically triggers an **outbound AI phone call**
+- Uses **Retell AI** for voice agent calling
+- Passes dynamic contact variables into the AI call
+- Includes a **Wait** step before call execution
+- Useful for:
+  - support callbacks
+  - lead follow-up
+  - appointment reminders
+  - outbound AI assistants :contentReference[oaicite:2]{index=2}
+
+---
+
+## Workflow Overview
+
+This workflow follows the process below:
+
+1. A user or staff member submits a contact through an **n8n form**
+2. The workflow captures:
+   - Name
+   - Email
+   - Phone
+3. A **Wait** node pauses execution before the outbound call
+4. The workflow sends the contact details to **Retell AI**
+5. Retell AI places an **outbound phone call** to the lead using a configured AI agent :contentReference[oaicite:3]{index=3}
+
+---
+
+## Nodes Used
+
+### 1. On Form Submission
+The workflow starts with an **n8n Form Trigger** titled:
+
+**Outbound Calls Form**
+
+It collects the following fields:
+
+- **Name** (required)
+- **Email**
+- **Phone** :contentReference[oaicite:4]{index=4}
+
+---
+
+### 2. Wait
+A **Wait** node pauses the workflow before initiating the call.
+
+This can be useful for:
+
+- delaying immediate outreach
+- creating a buffer after form submission
+- preparing downstream processing
+- avoiding instant robotic callback behavior :contentReference[oaicite:5]{index=5}
+
+---
+
+### 3. HTTP Request1
+This node sends a **POST request** to the **Retell AI API** endpoint:
+
+`https://api.retellai.com/v2/create-phone-call`
+
+It triggers the outbound AI phone call using:
+
+- a configured **from number**
+- the submitted **lead phone number**
+- a selected **Retell AI agent**
+- dynamic variables passed into the AI assistant :contentReference[oaicite:6]{index=6}
+
+---
+
+## Retell AI Call Configuration
+
+The outbound call request includes:
+
+- **From Number** → the business caller ID
+- **To Number** → the submitted lead phone number
+- **Call Type** → `phone_call`
+- **Override Agent ID** → specific Retell AI voice agent
+- **Dynamic Variables**:
+  - Name
+  - Email
+  - Phone :contentReference[oaicite:7]{index=7}
+
+---
+
+## Dynamic Variables Passed to AI
+
+The workflow injects lead information into the AI call:
+
+```json id="q5n4w7"
+{
+  "name": "{{ $json.Name }}",
+  "email": "{{ $json.Email }}",
+  "phone": "{{ $json.Phone }}"
+}
