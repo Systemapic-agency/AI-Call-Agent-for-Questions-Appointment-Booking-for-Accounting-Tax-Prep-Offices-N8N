@@ -92,7 +92,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2NhdGlvbl9pZCI6IlVXd3lBQVNOR1dKdWdzV1ZFRkNJIiwidmVyc2lvbiI6MSwiaWF0IjoxNzU3NTI3NTAzMzg0LCJzdWIiOiJqTkI2bW54Sk82dk85MUhaYnQ0diJ9.sWtoGlmKaOAuUiLNoIAuugSAT5UOhJYIJTVDDqh3X_o"
+              "value": "Bearer "
             },
             {
               "name": "Version",
