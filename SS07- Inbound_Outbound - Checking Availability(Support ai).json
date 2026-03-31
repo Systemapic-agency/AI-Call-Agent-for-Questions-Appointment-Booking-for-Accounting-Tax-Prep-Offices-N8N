@@ -1,0 +1,2257 @@
+{
+  "name": "SS07- Inbound/Outbound - Checking Availability(Support ai)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "8380d008-df18-43e0-a414-75f70c15678f",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2544,
+        -272
+      ],
+      "id": "942437c8-edac-4f8e-a333-5584486ee62b",
+      "name": "Webhook",
+      "webhookId": "8380d008-df18-43e0-a414-75f70c15678f"
+    },
+    {
+      "parameters": {
+        "operation": "addToDate",
+        "magnitude": "={{ $json.formattedDate }}",
+        "duration": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -1824,
+        -272
+      ],
+      "id": "88368211-5f53-4155-b4e3-e5861db7cf82",
+      "name": "Get Next Date"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $json.newDate }}",
+        "format": "x",
+        "outputFieldName": "endDate",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        -272
+      ],
+      "id": "da481a58-0056-437b-8bbe-cad7512bfc23",
+      "name": "Get End Date"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $json.body.args.date }}",
+        "format": "x",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -2064,
+        -272
+      ],
+      "id": "34b0011b-7611-4091-ac8b-6b7106acf080",
+      "name": "Get Start Date"
+    },
+    {
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/calendars/wo9Z76iZNF7ooWxwZjNb/free-slots",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "endDate",
+              "value": "={{ $json.endDate }}"
+            },
+            {
+              "name": "startDate",
+              "value": "={{ $('Get Start Date').item.json.formattedDate }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2NhdGlvbl9pZCI6IlVXd3lBQVNOR1dKdWdzV1ZFRkNJIiwidmVyc2lvbiI6MSwiaWF0IjoxNzU3NTI3NTAzMzg0LCJzdWIiOiJqTkI2bW54Sk82dk85MUhaYnQ0diJ9.sWtoGlmKaOAuUiLNoIAuugSAT5UOhJYIJTVDDqh3X_o"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "timezone",
+              "value": "America/New_York"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1408,
+        -272
+      ],
+      "id": "70bccc73-d1a3-447e-9889-b60fcb9c18b3",
+      "name": "Get free slots from ghl"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The datetime to check\nconst targetDateTime = $('Webhook').first().json.body.args.date;\n\n// The data object\nconst data = $input.first().json;\n\n// Helper function to format time while respecting the original timezone\nfunction formatTime(dateString) {\n  const date = new Date(dateString);\n  const options = {\n    hour: 'numeric',\n    minute: 'numeric',\n    hour12: true,\n    timeZone: 'America/Los_Angeles' // Use a specific timezone if needed\n  };\n  return date.toLocaleTimeString('en-US', options);\n}\n\n// Helper function to get day of the week\nfunction getDayOfWeek(dateString) {\n  const date = new Date(dateString);\n  const options = { weekday: 'long', timeZone: 'America/Los_Angeles' }; // Use specific timezone if needed\n  return date.toLocaleDateString('en-US', options);\n}\n\n// Flatten the slots into a single array\nlet allSlots = [];\nfor (const [date, details] of Object.entries(data)) {\n  if (details.slots) {\n    allSlots = allSlots.concat(details.slots);\n  }\n}\n\n// Check if the target datetime is present\nif (allSlots.includes(targetDateTime)) {\n  const day = getDayOfWeek(targetDateTime);\n  const time = formatTime(targetDateTime);\n  return { result: `${day} at ${time} is available.` };\n} else {\n  // Convert datetimes to Date objects with original strings for time zone preservation\n  const slotsWithOriginal = allSlots.map(slot => ({ date: new Date(slot), original: slot }));\n  const targetDate = new Date(targetDateTime);\n\n  // Sort slots by date\n  const sortedSlots = slotsWithOriginal.sort((a, b) => a.date - b.date);\n\n  // Find the two closest slots\n  let closestBefore = null;\n  let closestAfter = null;\n  let secondClosestAfter = null;\n\n  for (let i = 0; i < sortedSlots.length; i++) {\n    if (sortedSlots[i].date < targetDate) {\n      closestBefore = sortedSlots[i].original;\n    } else if (!closestAfter) {\n      closestAfter = sortedSlots[i].original;\n      if (i + 1 < sortedSlots.length) {\n        secondClosestAfter = sortedSlots[i + 1].original;\n      }\n      break;\n    }\n  }\n\n  // If no closestBefore, return two closest after\n  if (!closestBefore) {\n    closestBefore = closestAfter;\n    closestAfter = secondClosestAfter;\n  }\n\n  return { closestBefore, closestAfter };\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1136,
+        -272
+      ],
+      "id": "d5038d54-f930-41c1-b433-5041e7b976e8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get current year from system date\nconst currentYear = new Date().getFullYear();\nfor (const item of $input.all()) {\n  const appointmentDate = item.json.body?.args?.appointment_datetime;\n  if (appointmentDate) {\n    const oldDate = new Date(appointmentDate);\n    oldDate.setFullYear(currentYear);\n    // Set the updated date back in the same nested structure\n    item.json.body.args.appointment_datetime = oldDate.toISOString();\n  }\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2304,
+        -272
+      ],
+      "id": "e9dd9463-7a0a-4ce2-b0f9-bd933c317158",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.closestBefore }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -896,
+        -272
+      ],
+      "id": "9dfbec8c-d1fa-44e7-8288-e3969dcd1eac",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n.srv1013100.hstgr.cloud",
+            "user-agent": "axios/1.11.0",
+            "content-length": "22540",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "100.20.5.228",
+            "x-forwarded-host": "n8n.srv1013100.hstgr.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "1341fd004cd6",
+            "x-real-ip": "100.20.5.228",
+            "x-retell-signature": "v=1759940930185,d=36a8c175de1253446dfc1bf69e28e6d9234c177ec77b2944f2e2629d07f992ed"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "call": {
+              "call_id": "call_8e24b8270f1731ead5b0d21e94a",
+              "call_type": "web_call",
+              "agent_id": "agent_049b6960c4b1369133e31bcf6c",
+              "agent_version": 2,
+              "agent_name": "Inbound - Plumbing / HVAC / Electricians",
+              "call_status": "ongoing",
+              "start_timestamp": 1759940844555,
+              "transcript": "Agent: Thank you for calling! How can I help you today—are you looking for Plumbing, HVAC, or Electrical services?\nUser: Plumbing.\nAgent: Great, I can help you with plumbing services. May I have your full name, please?\nUser: Hi. It's Talhaq.\nAgent: Thank you, Talhaq. Could you please provide your email address?\nUser: It's Talha. At g mail dot com.\nAgent: Thank you, Talha. Could I have your phone number, please?\nUser: Yeah. It's one two three four five six seven eight nine zero.\nAgent: Thank you. Could you please provide the service address or location where you need plumbing assistance?\nUser: (inaudible speech)\nAgent: No problem—whenever you’re ready, could you please share the address or location where you need the plumbing service?\nUser: Karachi.\nAgent: Thank you. Could you briefly describe the plumbing issue or request you need help with?\nUser: Yeah. There's no water in my house.\nAgent: Thank you for letting me know, Talha. That sounds urgent. When would you like a plumber to come out? Do you have a preferred date and time for the appointment?\nUser: Yeah. For tomorrow at nine AM.\n",
+              "transcript_object": [
+                {
+                  "role": "agent",
+                  "content": "Thank you for calling! How can I help you today—are you looking for Plumbing, HVAC, or Electrical services?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 2.139,
+                      "end": 2.36
+                    },
+                    {
+                      "word": "you ",
+                      "start": 2.36,
+                      "end": 2.487
+                    },
+                    {
+                      "word": "for ",
+                      "start": 2.487,
+                      "end": 2.662
+                    },
+                    {
+                      "word": "calling!",
+                      "start": 2.662,
+                      "end": 3.184
+                    },
+                    {
+                      "word": " How ",
+                      "start": 3.219,
+                      "end": 3.405
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.405,
+                      "end": 3.567
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.567,
+                      "end": 3.648
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.648,
+                      "end": 3.857
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.857,
+                      "end": 3.985
+                    },
+                    {
+                      "word": "today—are ",
+                      "start": 3.985,
+                      "end": 4.415
+                    },
+                    {
+                      "word": "you ",
+                      "start": 4.415,
+                      "end": 4.519
+                    },
+                    {
+                      "word": "looking ",
+                      "start": 4.519,
+                      "end": 4.867
+                    },
+                    {
+                      "word": "for ",
+                      "start": 4.867,
+                      "end": 5.39
+                    },
+                    {
+                      "word": "Plumbing, ",
+                      "start": 5.39,
+                      "end": 5.982
+                    },
+                    {
+                      "word": "HVAC, ",
+                      "start": 5.982,
+                      "end": 6.539
+                    },
+                    {
+                      "word": "or ",
+                      "start": 6.539,
+                      "end": 6.69
+                    },
+                    {
+                      "word": "Electrical ",
+                      "start": 6.69,
+                      "end": 7.166
+                    },
+                    {
+                      "word": "services?",
+                      "start": 7.166,
+                      "end": 8.014
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Plumbing.",
+                  "words": [
+                    {
+                      "word": "Plumbing.",
+                      "start": 12.562999999999999,
+                      "end": 12.8829995
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Great, I can help you with plumbing services. May I have your full name, please?",
+                  "words": [
+                    {
+                      "word": "Great, ",
+                      "start": 14.965,
+                      "end": 15.244
+                    },
+                    {
+                      "word": "I ",
+                      "start": 15.244,
+                      "end": 15.337
+                    },
+                    {
+                      "word": "can ",
+                      "start": 15.337,
+                      "end": 15.488
+                    },
+                    {
+                      "word": "help ",
+                      "start": 15.488,
+                      "end": 15.662
+                    },
+                    {
+                      "word": "you ",
+                      "start": 15.662,
+                      "end": 15.766
+                    },
+                    {
+                      "word": "with ",
+                      "start": 15.766,
+                      "end": 15.917
+                    },
+                    {
+                      "word": "plumbing ",
+                      "start": 15.917,
+                      "end": 16.265
+                    },
+                    {
+                      "word": "services.",
+                      "start": 16.265,
+                      "end": 16.985
+                    },
+                    {
+                      "word": " May ",
+                      "start": 17.03125,
+                      "end": 17.20625
+                    },
+                    {
+                      "word": "I ",
+                      "start": 17.20625,
+                      "end": 17.27525
+                    },
+                    {
+                      "word": "have ",
+                      "start": 17.27525,
+                      "end": 17.49625
+                    },
+                    {
+                      "word": "your ",
+                      "start": 17.49625,
+                      "end": 17.67025
+                    },
+                    {
+                      "word": "full ",
+                      "start": 17.67025,
+                      "end": 17.92525
+                    },
+                    {
+                      "word": "name, ",
+                      "start": 17.92525,
+                      "end": 18.18125
+                    },
+                    {
+                      "word": "please?",
+                      "start": 18.18125,
+                      "end": 18.88925
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 1
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Hi. It's Talhaq.",
+                  "words": [
+                    {
+                      "word": "Hi. ",
+                      "start": 19.833,
+                      "end": 20.232999
+                    },
+                    {
+                      "word": "It's ",
+                      "start": 20.232999,
+                      "end": 20.473
+                    },
+                    {
+                      "word": "Talhaq.",
+                      "start": 20.473,
+                      "end": 20.953
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you, Talhaq. Could you please provide your email address?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 22.456,
+                      "end": 22.723
+                    },
+                    {
+                      "word": "you, ",
+                      "start": 22.723,
+                      "end": 22.909
+                    },
+                    {
+                      "word": "Talhaq.",
+                      "start": 22.909,
+                      "end": 23.617
+                    },
+                    {
+                      "word": " Could ",
+                      "start": 23.662875,
+                      "end": 23.802875
+                    },
+                    {
+                      "word": "you ",
+                      "start": 23.802875,
+                      "end": 23.906875
+                    },
+                    {
+                      "word": "please ",
+                      "start": 23.906875,
+                      "end": 24.150875
+                    },
+                    {
+                      "word": "provide ",
+                      "start": 24.150875,
+                      "end": 24.522875
+                    },
+                    {
+                      "word": "your ",
+                      "start": 24.522875,
+                      "end": 24.684875
+                    },
+                    {
+                      "word": "email ",
+                      "start": 24.684875,
+                      "end": 25.032875
+                    },
+                    {
+                      "word": "address?",
+                      "start": 25.032875,
+                      "end": 25.706875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "It's Talha. At g mail dot com.",
+                  "words": [
+                    {
+                      "word": "It's ",
+                      "start": 27.133,
+                      "end": 27.613
+                    },
+                    {
+                      "word": "Talha. ",
+                      "start": 27.613,
+                      "end": 28.093
+                    },
+                    {
+                      "word": "At ",
+                      "start": 28.293,
+                      "end": 28.613
+                    },
+                    {
+                      "word": "g ",
+                      "start": 28.613,
+                      "end": 29.093
+                    },
+                    {
+                      "word": "mail ",
+                      "start": 29.093,
+                      "end": 29.253
+                    },
+                    {
+                      "word": "dot ",
+                      "start": 29.253,
+                      "end": 29.493001
+                    },
+                    {
+                      "word": "com.",
+                      "start": 29.493001,
+                      "end": 29.653
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you, Talha. Could I have your phone number, please?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 30.973,
+                      "end": 31.298
+                    },
+                    {
+                      "word": "you, ",
+                      "start": 31.298,
+                      "end": 31.449
+                    },
+                    {
+                      "word": "Talha.",
+                      "start": 31.449,
+                      "end": 32.157
+                    },
+                    {
+                      "word": " Could ",
+                      "start": 32.202875,
+                      "end": 32.446875
+                    },
+                    {
+                      "word": "I ",
+                      "start": 32.446875,
+                      "end": 32.609875
+                    },
+                    {
+                      "word": "have ",
+                      "start": 32.609875,
+                      "end": 32.795875
+                    },
+                    {
+                      "word": "your ",
+                      "start": 32.795875,
+                      "end": 32.934875
+                    },
+                    {
+                      "word": "phone ",
+                      "start": 32.934875,
+                      "end": 33.143875
+                    },
+                    {
+                      "word": "number, ",
+                      "start": 33.143875,
+                      "end": 33.421875
+                    },
+                    {
+                      "word": "please?",
+                      "start": 33.421875,
+                      "end": 34.014875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 3
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. It's one two three four five six seven eight nine zero.",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 35.443,
+                      "end": 35.763
+                    },
+                    {
+                      "word": "It's ",
+                      "start": 35.763,
+                      "end": 36.003
+                    },
+                    {
+                      "word": "one ",
+                      "start": 36.003,
+                      "end": 36.163
+                    },
+                    {
+                      "word": "two ",
+                      "start": 36.163,
+                      "end": 36.323
+                    },
+                    {
+                      "word": "three ",
+                      "start": 36.323,
+                      "end": 36.563
+                    },
+                    {
+                      "word": "four ",
+                      "start": 36.563,
+                      "end": 36.723
+                    },
+                    {
+                      "word": "five ",
+                      "start": 36.723,
+                      "end": 36.963
+                    },
+                    {
+                      "word": "six ",
+                      "start": 36.963,
+                      "end": 37.123002
+                    },
+                    {
+                      "word": "seven ",
+                      "start": 37.193,
+                      "end": 37.513
+                    },
+                    {
+                      "word": "eight ",
+                      "start": 37.513,
+                      "end": 37.673
+                    },
+                    {
+                      "word": "nine ",
+                      "start": 37.673,
+                      "end": 37.833
+                    },
+                    {
+                      "word": "zero.",
+                      "start": 37.833,
+                      "end": 38.073003
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you. Could you please provide the service address or location where you need plumbing assistance?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 39.722,
+                      "end": 40.059
+                    },
+                    {
+                      "word": "you.",
+                      "start": 40.059,
+                      "end": 40.43
+                    },
+                    {
+                      "word": " Could ",
+                      "start": 40.4535,
+                      "end": 40.6515
+                    },
+                    {
+                      "word": "you ",
+                      "start": 40.6515,
+                      "end": 40.7555
+                    },
+                    {
+                      "word": "please ",
+                      "start": 40.7555,
+                      "end": 41.0105
+                    },
+                    {
+                      "word": "provide ",
+                      "start": 41.0105,
+                      "end": 41.3475
+                    },
+                    {
+                      "word": "the ",
+                      "start": 41.3475,
+                      "end": 41.4525
+                    },
+                    {
+                      "word": "service ",
+                      "start": 41.4525,
+                      "end": 41.7775
+                    },
+                    {
+                      "word": "address ",
+                      "start": 41.7775,
+                      "end": 42.1485
+                    },
+                    {
+                      "word": "or ",
+                      "start": 42.1485,
+                      "end": 42.3695
+                    },
+                    {
+                      "word": "location ",
+                      "start": 42.3695,
+                      "end": 42.7985
+                    },
+                    {
+                      "word": "where ",
+                      "start": 42.7985,
+                      "end": 42.9495
+                    },
+                    {
+                      "word": "you ",
+                      "start": 42.9495,
+                      "end": 43.0545
+                    },
+                    {
+                      "word": "need ",
+                      "start": 43.0545,
+                      "end": 43.2865
+                    },
+                    {
+                      "word": "plumbing ",
+                      "start": 43.2865,
+                      "end": 43.6115
+                    },
+                    {
+                      "word": "assistance?",
+                      "start": 43.6115,
+                      "end": 44.3775
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "(inaudible speech)",
+                  "words": [
+                    {
+                      "word": "",
+                      "start": 47.162999,
+                      "end": 47.162999
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "No problem—whenever you’re ready, could you please share the address or location where you need the plumbing service?",
+                  "words": [
+                    {
+                      "word": "No ",
+                      "start": 49.365,
+                      "end": 49.516
+                    },
+                    {
+                      "word": "problem—whenever ",
+                      "start": 49.516,
+                      "end": 50.224
+                    },
+                    {
+                      "word": "you’re ",
+                      "start": 50.224,
+                      "end": 50.456
+                    },
+                    {
+                      "word": "ready, ",
+                      "start": 50.456,
+                      "end": 50.712
+                    },
+                    {
+                      "word": "could ",
+                      "start": 50.712,
+                      "end": 50.897
+                    },
+                    {
+                      "word": "you ",
+                      "start": 50.897,
+                      "end": 51.025
+                    },
+                    {
+                      "word": "please ",
+                      "start": 51.025,
+                      "end": 51.304
+                    },
+                    {
+                      "word": "share ",
+                      "start": 51.304,
+                      "end": 51.536
+                    },
+                    {
+                      "word": "the ",
+                      "start": 51.536,
+                      "end": 51.64
+                    },
+                    {
+                      "word": "address ",
+                      "start": 51.64,
+                      "end": 52.024
+                    },
+                    {
+                      "word": "or ",
+                      "start": 52.024,
+                      "end": 52.151
+                    },
+                    {
+                      "word": "location ",
+                      "start": 52.151,
+                      "end": 52.627
+                    },
+                    {
+                      "word": "where ",
+                      "start": 52.627,
+                      "end": 52.778
+                    },
+                    {
+                      "word": "you ",
+                      "start": 52.778,
+                      "end": 52.883
+                    },
+                    {
+                      "word": "need ",
+                      "start": 52.883,
+                      "end": 53.115
+                    },
+                    {
+                      "word": "the ",
+                      "start": 53.115,
+                      "end": 53.219
+                    },
+                    {
+                      "word": "plumbing ",
+                      "start": 53.219,
+                      "end": 53.579
+                    },
+                    {
+                      "word": "service?",
+                      "start": 53.579,
+                      "end": 54.322
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 6
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Karachi.",
+                  "words": [
+                    {
+                      "word": "Karachi.",
+                      "start": 55.453,
+                      "end": 56.013
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you. Could you briefly describe the plumbing issue or request you need help with?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 59.381,
+                      "end": 59.706
+                    },
+                    {
+                      "word": "you.",
+                      "start": 59.706,
+                      "end": 60.089
+                    },
+                    {
+                      "word": " Could ",
+                      "start": 60.1355,
+                      "end": 60.3685
+                    },
+                    {
+                      "word": "you ",
+                      "start": 60.3685,
+                      "end": 60.5075
+                    },
+                    {
+                      "word": "briefly ",
+                      "start": 60.5075,
+                      "end": 60.8785
+                    },
+                    {
+                      "word": "describe ",
+                      "start": 60.8785,
+                      "end": 61.2625
+                    },
+                    {
+                      "word": "the ",
+                      "start": 61.2625,
+                      "end": 61.3665
+                    },
+                    {
+                      "word": "plumbing ",
+                      "start": 61.3665,
+                      "end": 61.7385
+                    },
+                    {
+                      "word": "issue ",
+                      "start": 61.7385,
+                      "end": 62.1215
+                    },
+                    {
+                      "word": "or ",
+                      "start": 62.1215,
+                      "end": 62.2485
+                    },
+                    {
+                      "word": "request ",
+                      "start": 62.2485,
+                      "end": 62.6325
+                    },
+                    {
+                      "word": "you ",
+                      "start": 62.6325,
+                      "end": 62.7485
+                    },
+                    {
+                      "word": "need ",
+                      "start": 62.7485,
+                      "end": 62.9455
+                    },
+                    {
+                      "word": "help ",
+                      "start": 62.9455,
+                      "end": 63.1665
+                    },
+                    {
+                      "word": "with?",
+                      "start": 63.1665,
+                      "end": 63.6655
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 7
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. There's no water in my house.",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 65.203,
+                      "end": 66.24300000000001
+                    },
+                    {
+                      "word": "There's ",
+                      "start": 68.163,
+                      "end": 68.563
+                    },
+                    {
+                      "word": "no ",
+                      "start": 68.563,
+                      "end": 68.803
+                    },
+                    {
+                      "word": "water ",
+                      "start": 68.803,
+                      "end": 69.043
+                    },
+                    {
+                      "word": "in ",
+                      "start": 69.043,
+                      "end": 69.20300399999999
+                    },
+                    {
+                      "word": "my ",
+                      "start": 69.20300399999999,
+                      "end": 69.363
+                    },
+                    {
+                      "word": "house.",
+                      "start": 69.363,
+                      "end": 69.523
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you for letting me know, Talha. That sounds urgent. When would you like a plumber to come out? Do you have a preferred date and time for the appointment?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 71.426,
+                      "end": 71.693
+                    },
+                    {
+                      "word": "you ",
+                      "start": 71.693,
+                      "end": 71.832
+                    },
+                    {
+                      "word": "for ",
+                      "start": 71.832,
+                      "end": 71.972
+                    },
+                    {
+                      "word": "letting ",
+                      "start": 71.972,
+                      "end": 72.215
+                    },
+                    {
+                      "word": "me ",
+                      "start": 72.215,
+                      "end": 72.331
+                    },
+                    {
+                      "word": "know, ",
+                      "start": 72.331,
+                      "end": 72.587
+                    },
+                    {
+                      "word": "Talha.",
+                      "start": 72.587,
+                      "end": 73.237
+                    },
+                    {
+                      "word": " That ",
+                      "start": 73.28304174804687,
+                      "end": 73.50404174804687
+                    },
+                    {
+                      "word": "sounds ",
+                      "start": 73.50404174804687,
+                      "end": 73.78304174804687
+                    },
+                    {
+                      "word": "urgent.",
+                      "start": 73.78304174804687,
+                      "end": 74.35204174804687
+                    },
+                    {
+                      "word": " When ",
+                      "start": 74.397625,
+                      "end": 74.618625
+                    },
+                    {
+                      "word": "would ",
+                      "start": 74.618625,
+                      "end": 74.781625
+                    },
+                    {
+                      "word": "you ",
+                      "start": 74.781625,
+                      "end": 74.897625
+                    },
+                    {
+                      "word": "like ",
+                      "start": 74.897625,
+                      "end": 75.071625
+                    },
+                    {
+                      "word": "a ",
+                      "start": 75.071625,
+                      "end": 75.140625
+                    },
+                    {
+                      "word": "plumber ",
+                      "start": 75.140625,
+                      "end": 75.477625
+                    },
+                    {
+                      "word": "to ",
+                      "start": 75.477625,
+                      "end": 75.593625
+                    },
+                    {
+                      "word": "come ",
+                      "start": 75.593625,
+                      "end": 75.779625
+                    },
+                    {
+                      "word": "out?",
+                      "start": 75.779625,
+                      "end": 76.116625
+                    },
+                    {
+                      "word": " Do ",
+                      "start": 76.16233325195313,
+                      "end": 76.26733325195312
+                    },
+                    {
+                      "word": "you ",
+                      "start": 76.26733325195312,
+                      "end": 76.39533325195312
+                    },
+                    {
+                      "word": "have ",
+                      "start": 76.39533325195312,
+                      "end": 76.55733325195312
+                    },
+                    {
+                      "word": "a ",
+                      "start": 76.55733325195312,
+                      "end": 76.63833325195313
+                    },
+                    {
+                      "word": "preferred ",
+                      "start": 76.63833325195313,
+                      "end": 77.11433325195313
+                    },
+                    {
+                      "word": "date ",
+                      "start": 77.11433325195313,
+                      "end": 77.46333325195313
+                    },
+                    {
+                      "word": "and ",
+                      "start": 77.46333325195313,
+                      "end": 77.59033325195313
+                    },
+                    {
+                      "word": "time ",
+                      "start": 77.59033325195313,
+                      "end": 77.88133325195312
+                    },
+                    {
+                      "word": "for ",
+                      "start": 77.88133325195312,
+                      "end": 78.02033325195312
+                    },
+                    {
+                      "word": "the ",
+                      "start": 78.02033325195312,
+                      "end": 78.11333325195312
+                    },
+                    {
+                      "word": "appointment?",
+                      "start": 78.11333325195312,
+                      "end": 78.90233325195312
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 8
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. For tomorrow at nine AM.",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 80.043,
+                      "end": 80.763
+                    },
+                    {
+                      "word": "For ",
+                      "start": 80.763,
+                      "end": 81.403
+                    },
+                    {
+                      "word": "tomorrow ",
+                      "start": 81.403,
+                      "end": 82.203
+                    },
+                    {
+                      "word": "at ",
+                      "start": 82.203,
+                      "end": 82.522996
+                    },
+                    {
+                      "word": "nine ",
+                      "start": 82.522996,
+                      "end": 82.763
+                    },
+                    {
+                      "word": "AM.",
+                      "start": 82.763,
+                      "end": 83.003
+                    }
+                  ]
+                }
+              ],
+              "transcript_with_tool_calls": [
+                {
+                  "role": "agent",
+                  "content": "Thank you for calling! How can I help you today—are you looking for Plumbing, HVAC, or Electrical services?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 2.139,
+                      "end": 2.36
+                    },
+                    {
+                      "word": "you ",
+                      "start": 2.36,
+                      "end": 2.487
+                    },
+                    {
+                      "word": "for ",
+                      "start": 2.487,
+                      "end": 2.662
+                    },
+                    {
+                      "word": "calling!",
+                      "start": 2.662,
+                      "end": 3.184
+                    },
+                    {
+                      "word": " How ",
+                      "start": 3.219,
+                      "end": 3.405
+                    },
+                    {
+                      "word": "can ",
+                      "start": 3.405,
+                      "end": 3.567
+                    },
+                    {
+                      "word": "I ",
+                      "start": 3.567,
+                      "end": 3.648
+                    },
+                    {
+                      "word": "help ",
+                      "start": 3.648,
+                      "end": 3.857
+                    },
+                    {
+                      "word": "you ",
+                      "start": 3.857,
+                      "end": 3.985
+                    },
+                    {
+                      "word": "today—are ",
+                      "start": 3.985,
+                      "end": 4.415
+                    },
+                    {
+                      "word": "you ",
+                      "start": 4.415,
+                      "end": 4.519
+                    },
+                    {
+                      "word": "looking ",
+                      "start": 4.519,
+                      "end": 4.867
+                    },
+                    {
+                      "word": "for ",
+                      "start": 4.867,
+                      "end": 5.39
+                    },
+                    {
+                      "word": "Plumbing, ",
+                      "start": 5.39,
+                      "end": 5.982
+                    },
+                    {
+                      "word": "HVAC, ",
+                      "start": 5.982,
+                      "end": 6.539
+                    },
+                    {
+                      "word": "or ",
+                      "start": 6.539,
+                      "end": 6.69
+                    },
+                    {
+                      "word": "Electrical ",
+                      "start": 6.69,
+                      "end": 7.166
+                    },
+                    {
+                      "word": "services?",
+                      "start": 7.166,
+                      "end": 8.014
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 0
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Plumbing.",
+                  "words": [
+                    {
+                      "word": "Plumbing.",
+                      "start": 12.562999999999999,
+                      "end": 12.8829995
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Great, I can help you with plumbing services. May I have your full name, please?",
+                  "words": [
+                    {
+                      "word": "Great, ",
+                      "start": 14.965,
+                      "end": 15.244
+                    },
+                    {
+                      "word": "I ",
+                      "start": 15.244,
+                      "end": 15.337
+                    },
+                    {
+                      "word": "can ",
+                      "start": 15.337,
+                      "end": 15.488
+                    },
+                    {
+                      "word": "help ",
+                      "start": 15.488,
+                      "end": 15.662
+                    },
+                    {
+                      "word": "you ",
+                      "start": 15.662,
+                      "end": 15.766
+                    },
+                    {
+                      "word": "with ",
+                      "start": 15.766,
+                      "end": 15.917
+                    },
+                    {
+                      "word": "plumbing ",
+                      "start": 15.917,
+                      "end": 16.265
+                    },
+                    {
+                      "word": "services.",
+                      "start": 16.265,
+                      "end": 16.985
+                    },
+                    {
+                      "word": " May ",
+                      "start": 17.03125,
+                      "end": 17.20625
+                    },
+                    {
+                      "word": "I ",
+                      "start": 17.20625,
+                      "end": 17.27525
+                    },
+                    {
+                      "word": "have ",
+                      "start": 17.27525,
+                      "end": 17.49625
+                    },
+                    {
+                      "word": "your ",
+                      "start": 17.49625,
+                      "end": 17.67025
+                    },
+                    {
+                      "word": "full ",
+                      "start": 17.67025,
+                      "end": 17.92525
+                    },
+                    {
+                      "word": "name, ",
+                      "start": 17.92525,
+                      "end": 18.18125
+                    },
+                    {
+                      "word": "please?",
+                      "start": 18.18125,
+                      "end": 18.88925
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 1
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Hi. It's Talhaq.",
+                  "words": [
+                    {
+                      "word": "Hi. ",
+                      "start": 19.833,
+                      "end": 20.232999
+                    },
+                    {
+                      "word": "It's ",
+                      "start": 20.232999,
+                      "end": 20.473
+                    },
+                    {
+                      "word": "Talhaq.",
+                      "start": 20.473,
+                      "end": 20.953
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you, Talhaq. Could you please provide your email address?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 22.456,
+                      "end": 22.723
+                    },
+                    {
+                      "word": "you, ",
+                      "start": 22.723,
+                      "end": 22.909
+                    },
+                    {
+                      "word": "Talhaq.",
+                      "start": 22.909,
+                      "end": 23.617
+                    },
+                    {
+                      "word": " Could ",
+                      "start": 23.662875,
+                      "end": 23.802875
+                    },
+                    {
+                      "word": "you ",
+                      "start": 23.802875,
+                      "end": 23.906875
+                    },
+                    {
+                      "word": "please ",
+                      "start": 23.906875,
+                      "end": 24.150875
+                    },
+                    {
+                      "word": "provide ",
+                      "start": 24.150875,
+                      "end": 24.522875
+                    },
+                    {
+                      "word": "your ",
+                      "start": 24.522875,
+                      "end": 24.684875
+                    },
+                    {
+                      "word": "email ",
+                      "start": 24.684875,
+                      "end": 25.032875
+                    },
+                    {
+                      "word": "address?",
+                      "start": 25.032875,
+                      "end": 25.706875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 2
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "It's Talha. At g mail dot com.",
+                  "words": [
+                    {
+                      "word": "It's ",
+                      "start": 27.133,
+                      "end": 27.613
+                    },
+                    {
+                      "word": "Talha. ",
+                      "start": 27.613,
+                      "end": 28.093
+                    },
+                    {
+                      "word": "At ",
+                      "start": 28.293,
+                      "end": 28.613
+                    },
+                    {
+                      "word": "g ",
+                      "start": 28.613,
+                      "end": 29.093
+                    },
+                    {
+                      "word": "mail ",
+                      "start": 29.093,
+                      "end": 29.253
+                    },
+                    {
+                      "word": "dot ",
+                      "start": 29.253,
+                      "end": 29.493001
+                    },
+                    {
+                      "word": "com.",
+                      "start": 29.493001,
+                      "end": 29.653
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you, Talha. Could I have your phone number, please?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 30.973,
+                      "end": 31.298
+                    },
+                    {
+                      "word": "you, ",
+                      "start": 31.298,
+                      "end": 31.449
+                    },
+                    {
+                      "word": "Talha.",
+                      "start": 31.449,
+                      "end": 32.157
+                    },
+                    {
+                      "word": " Could ",
+                      "start": 32.202875,
+                      "end": 32.446875
+                    },
+                    {
+                      "word": "I ",
+                      "start": 32.446875,
+                      "end": 32.609875
+                    },
+                    {
+                      "word": "have ",
+                      "start": 32.609875,
+                      "end": 32.795875
+                    },
+                    {
+                      "word": "your ",
+                      "start": 32.795875,
+                      "end": 32.934875
+                    },
+                    {
+                      "word": "phone ",
+                      "start": 32.934875,
+                      "end": 33.143875
+                    },
+                    {
+                      "word": "number, ",
+                      "start": 33.143875,
+                      "end": 33.421875
+                    },
+                    {
+                      "word": "please?",
+                      "start": 33.421875,
+                      "end": 34.014875
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 3
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. It's one two three four five six seven eight nine zero.",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 35.443,
+                      "end": 35.763
+                    },
+                    {
+                      "word": "It's ",
+                      "start": 35.763,
+                      "end": 36.003
+                    },
+                    {
+                      "word": "one ",
+                      "start": 36.003,
+                      "end": 36.163
+                    },
+                    {
+                      "word": "two ",
+                      "start": 36.163,
+                      "end": 36.323
+                    },
+                    {
+                      "word": "three ",
+                      "start": 36.323,
+                      "end": 36.563
+                    },
+                    {
+                      "word": "four ",
+                      "start": 36.563,
+                      "end": 36.723
+                    },
+                    {
+                      "word": "five ",
+                      "start": 36.723,
+                      "end": 36.963
+                    },
+                    {
+                      "word": "six ",
+                      "start": 36.963,
+                      "end": 37.123002
+                    },
+                    {
+                      "word": "seven ",
+                      "start": 37.193,
+                      "end": 37.513
+                    },
+                    {
+                      "word": "eight ",
+                      "start": 37.513,
+                      "end": 37.673
+                    },
+                    {
+                      "word": "nine ",
+                      "start": 37.673,
+                      "end": 37.833
+                    },
+                    {
+                      "word": "zero.",
+                      "start": 37.833,
+                      "end": 38.073003
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you. Could you please provide the service address or location where you need plumbing assistance?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 39.722,
+                      "end": 40.059
+                    },
+                    {
+                      "word": "you.",
+                      "start": 40.059,
+                      "end": 40.43
+                    },
+                    {
+                      "word": " Could ",
+                      "start": 40.4535,
+                      "end": 40.6515
+                    },
+                    {
+                      "word": "you ",
+                      "start": 40.6515,
+                      "end": 40.7555
+                    },
+                    {
+                      "word": "please ",
+                      "start": 40.7555,
+                      "end": 41.0105
+                    },
+                    {
+                      "word": "provide ",
+                      "start": 41.0105,
+                      "end": 41.3475
+                    },
+                    {
+                      "word": "the ",
+                      "start": 41.3475,
+                      "end": 41.4525
+                    },
+                    {
+                      "word": "service ",
+                      "start": 41.4525,
+                      "end": 41.7775
+                    },
+                    {
+                      "word": "address ",
+                      "start": 41.7775,
+                      "end": 42.1485
+                    },
+                    {
+                      "word": "or ",
+                      "start": 42.1485,
+                      "end": 42.3695
+                    },
+                    {
+                      "word": "location ",
+                      "start": 42.3695,
+                      "end": 42.7985
+                    },
+                    {
+                      "word": "where ",
+                      "start": 42.7985,
+                      "end": 42.9495
+                    },
+                    {
+                      "word": "you ",
+                      "start": 42.9495,
+                      "end": 43.0545
+                    },
+                    {
+                      "word": "need ",
+                      "start": 43.0545,
+                      "end": 43.2865
+                    },
+                    {
+                      "word": "plumbing ",
+                      "start": 43.2865,
+                      "end": 43.6115
+                    },
+                    {
+                      "word": "assistance?",
+                      "start": 43.6115,
+                      "end": 44.3775
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 4
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "(inaudible speech)",
+                  "words": [
+                    {
+                      "word": "",
+                      "start": 47.162999,
+                      "end": 47.162999
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "No problem—whenever you’re ready, could you please share the address or location where you need the plumbing service?",
+                  "words": [
+                    {
+                      "word": "No ",
+                      "start": 49.365,
+                      "end": 49.516
+                    },
+                    {
+                      "word": "problem—whenever ",
+                      "start": 49.516,
+                      "end": 50.224
+                    },
+                    {
+                      "word": "you’re ",
+                      "start": 50.224,
+                      "end": 50.456
+                    },
+                    {
+                      "word": "ready, ",
+                      "start": 50.456,
+                      "end": 50.712
+                    },
+                    {
+                      "word": "could ",
+                      "start": 50.712,
+                      "end": 50.897
+                    },
+                    {
+                      "word": "you ",
+                      "start": 50.897,
+                      "end": 51.025
+                    },
+                    {
+                      "word": "please ",
+                      "start": 51.025,
+                      "end": 51.304
+                    },
+                    {
+                      "word": "share ",
+                      "start": 51.304,
+                      "end": 51.536
+                    },
+                    {
+                      "word": "the ",
+                      "start": 51.536,
+                      "end": 51.64
+                    },
+                    {
+                      "word": "address ",
+                      "start": 51.64,
+                      "end": 52.024
+                    },
+                    {
+                      "word": "or ",
+                      "start": 52.024,
+                      "end": 52.151
+                    },
+                    {
+                      "word": "location ",
+                      "start": 52.151,
+                      "end": 52.627
+                    },
+                    {
+                      "word": "where ",
+                      "start": 52.627,
+                      "end": 52.778
+                    },
+                    {
+                      "word": "you ",
+                      "start": 52.778,
+                      "end": 52.883
+                    },
+                    {
+                      "word": "need ",
+                      "start": 52.883,
+                      "end": 53.115
+                    },
+                    {
+                      "word": "the ",
+                      "start": 53.115,
+                      "end": 53.219
+                    },
+                    {
+                      "word": "plumbing ",
+                      "start": 53.219,
+                      "end": 53.579
+                    },
+                    {
+                      "word": "service?",
+                      "start": 53.579,
+                      "end": 54.322
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 6
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Karachi.",
+                  "words": [
+                    {
+                      "word": "Karachi.",
+                      "start": 55.453,
+                      "end": 56.013
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you. Could you briefly describe the plumbing issue or request you need help with?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 59.381,
+                      "end": 59.706
+                    },
+                    {
+                      "word": "you.",
+                      "start": 59.706,
+                      "end": 60.089
+                    },
+                    {
+                      "word": " Could ",
+                      "start": 60.1355,
+                      "end": 60.3685
+                    },
+                    {
+                      "word": "you ",
+                      "start": 60.3685,
+                      "end": 60.5075
+                    },
+                    {
+                      "word": "briefly ",
+                      "start": 60.5075,
+                      "end": 60.8785
+                    },
+                    {
+                      "word": "describe ",
+                      "start": 60.8785,
+                      "end": 61.2625
+                    },
+                    {
+                      "word": "the ",
+                      "start": 61.2625,
+                      "end": 61.3665
+                    },
+                    {
+                      "word": "plumbing ",
+                      "start": 61.3665,
+                      "end": 61.7385
+                    },
+                    {
+                      "word": "issue ",
+                      "start": 61.7385,
+                      "end": 62.1215
+                    },
+                    {
+                      "word": "or ",
+                      "start": 62.1215,
+                      "end": 62.2485
+                    },
+                    {
+                      "word": "request ",
+                      "start": 62.2485,
+                      "end": 62.6325
+                    },
+                    {
+                      "word": "you ",
+                      "start": 62.6325,
+                      "end": 62.7485
+                    },
+                    {
+                      "word": "need ",
+                      "start": 62.7485,
+                      "end": 62.9455
+                    },
+                    {
+                      "word": "help ",
+                      "start": 62.9455,
+                      "end": 63.1665
+                    },
+                    {
+                      "word": "with?",
+                      "start": 63.1665,
+                      "end": 63.6655
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 7
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. There's no water in my house.",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 65.203,
+                      "end": 66.24300000000001
+                    },
+                    {
+                      "word": "There's ",
+                      "start": 68.163,
+                      "end": 68.563
+                    },
+                    {
+                      "word": "no ",
+                      "start": 68.563,
+                      "end": 68.803
+                    },
+                    {
+                      "word": "water ",
+                      "start": 68.803,
+                      "end": 69.043
+                    },
+                    {
+                      "word": "in ",
+                      "start": 69.043,
+                      "end": 69.20300399999999
+                    },
+                    {
+                      "word": "my ",
+                      "start": 69.20300399999999,
+                      "end": 69.363
+                    },
+                    {
+                      "word": "house.",
+                      "start": 69.363,
+                      "end": 69.523
+                    }
+                  ]
+                },
+                {
+                  "role": "agent",
+                  "content": "Thank you for letting me know, Talha. That sounds urgent. When would you like a plumber to come out? Do you have a preferred date and time for the appointment?",
+                  "words": [
+                    {
+                      "word": "Thank ",
+                      "start": 71.426,
+                      "end": 71.693
+                    },
+                    {
+                      "word": "you ",
+                      "start": 71.693,
+                      "end": 71.832
+                    },
+                    {
+                      "word": "for ",
+                      "start": 71.832,
+                      "end": 71.972
+                    },
+                    {
+                      "word": "letting ",
+                      "start": 71.972,
+                      "end": 72.215
+                    },
+                    {
+                      "word": "me ",
+                      "start": 72.215,
+                      "end": 72.331
+                    },
+                    {
+                      "word": "know, ",
+                      "start": 72.331,
+                      "end": 72.587
+                    },
+                    {
+                      "word": "Talha.",
+                      "start": 72.587,
+                      "end": 73.237
+                    },
+                    {
+                      "word": " That ",
+                      "start": 73.28304174804687,
+                      "end": 73.50404174804687
+                    },
+                    {
+                      "word": "sounds ",
+                      "start": 73.50404174804687,
+                      "end": 73.78304174804687
+                    },
+                    {
+                      "word": "urgent.",
+                      "start": 73.78304174804687,
+                      "end": 74.35204174804687
+                    },
+                    {
+                      "word": " When ",
+                      "start": 74.397625,
+                      "end": 74.618625
+                    },
+                    {
+                      "word": "would ",
+                      "start": 74.618625,
+                      "end": 74.781625
+                    },
+                    {
+                      "word": "you ",
+                      "start": 74.781625,
+                      "end": 74.897625
+                    },
+                    {
+                      "word": "like ",
+                      "start": 74.897625,
+                      "end": 75.071625
+                    },
+                    {
+                      "word": "a ",
+                      "start": 75.071625,
+                      "end": 75.140625
+                    },
+                    {
+                      "word": "plumber ",
+                      "start": 75.140625,
+                      "end": 75.477625
+                    },
+                    {
+                      "word": "to ",
+                      "start": 75.477625,
+                      "end": 75.593625
+                    },
+                    {
+                      "word": "come ",
+                      "start": 75.593625,
+                      "end": 75.779625
+                    },
+                    {
+                      "word": "out?",
+                      "start": 75.779625,
+                      "end": 76.116625
+                    },
+                    {
+                      "word": " Do ",
+                      "start": 76.16233325195313,
+                      "end": 76.26733325195312
+                    },
+                    {
+                      "word": "you ",
+                      "start": 76.26733325195312,
+                      "end": 76.39533325195312
+                    },
+                    {
+                      "word": "have ",
+                      "start": 76.39533325195312,
+                      "end": 76.55733325195312
+                    },
+                    {
+                      "word": "a ",
+                      "start": 76.55733325195312,
+                      "end": 76.63833325195313
+                    },
+                    {
+                      "word": "preferred ",
+                      "start": 76.63833325195313,
+                      "end": 77.11433325195313
+                    },
+                    {
+                      "word": "date ",
+                      "start": 77.11433325195313,
+                      "end": 77.46333325195313
+                    },
+                    {
+                      "word": "and ",
+                      "start": 77.46333325195313,
+                      "end": 77.59033325195313
+                    },
+                    {
+                      "word": "time ",
+                      "start": 77.59033325195313,
+                      "end": 77.88133325195312
+                    },
+                    {
+                      "word": "for ",
+                      "start": 77.88133325195312,
+                      "end": 78.02033325195312
+                    },
+                    {
+                      "word": "the ",
+                      "start": 78.02033325195312,
+                      "end": 78.11333325195312
+                    },
+                    {
+                      "word": "appointment?",
+                      "start": 78.11333325195312,
+                      "end": 78.90233325195312
+                    }
+                  ],
+                  "metadata": {
+                    "response_id": 8
+                  }
+                },
+                {
+                  "role": "user",
+                  "content": "Yeah. For tomorrow at nine AM.",
+                  "words": [
+                    {
+                      "word": "Yeah. ",
+                      "start": 80.043,
+                      "end": 80.763
+                    },
+                    {
+                      "word": "For ",
+                      "start": 80.763,
+                      "end": 81.403
+                    },
+                    {
+                      "word": "tomorrow ",
+                      "start": 81.403,
+                      "end": 82.203
+                    },
+                    {
+                      "word": "at ",
+                      "start": 82.203,
+                      "end": 82.522996
+                    },
+                    {
+                      "word": "nine ",
+                      "start": 82.522996,
+                      "end": 82.763
+                    },
+                    {
+                      "word": "AM.",
+                      "start": 82.763,
+                      "end": 83.003
+                    }
+                  ]
+                },
+                {
+                  "role": "tool_call_invocation",
+                  "tool_call_id": "7bfeb8f4f7e75b80",
+                  "name": "check_cal",
+                  "arguments": "{\"date\":\"2025-10-09\",\"time\":\"09:00:00\"}",
+                  "time_sec": 85.629,
+                  "type": "custom"
+                }
+              ],
+              "latency": {},
+              "call_cost": {
+                "product_costs": [],
+                "total_duration_unit_price": 0,
+                "total_duration_seconds": 0,
+                "combined_cost": 0
+              },
+              "opt_out_sensitive_data_storage": false,
+              "data_storage_setting": "everything",
+              "opt_in_signed_url": false,
+              "access_token": "eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6IndlYl9jYWxsXzhlMjRiODI3MGYxNzMxZWFkNWIwZDIxZTk0YSJ9LCJpc3MiOiJBUElqWGZBMzVHTmM3WHgiLCJleHAiOjE3NTk5NDE0NDMsIm5iZiI6MCwic3ViIjoiY2xpZW50In0.ncnx1O_2xjDceAci-yOZOy8M8ebq_G02L52U_b84NQ0"
+            },
+            "name": "check_cal",
+            "args": {
+              "date": "2025-10-09",
+              "time": "09:00:00"
+            }
+          },
+          "webhookUrl": "https://n8n.srv1013100.hstgr.cloud/webhook/8380d008-df18-43e0-a414-75f70c15678f",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Next Date": {
+      "main": [
+        [
+          {
+            "node": "Get End Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get End Date": {
+      "main": [
+        [
+          {
+            "node": "Get free slots from ghl",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Start Date": {
+      "main": [
+        [
+          {
+            "node": "Get Next Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get free slots from ghl": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Get Start Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1733e2c0-4e50-45b7-8db3-fa205ef6f74b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6c4c446d5304742a3c3b35610a91a9314f8fa6e78abf59256949d198dc0f9226"
+  },
+  "id": "AxlE0OcPK5PJvxtH",
+  "tags": []
+}
