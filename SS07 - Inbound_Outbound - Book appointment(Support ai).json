@@ -228,7 +228,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer pit-1bb9356d-79e4-410d-a370-be52ea8d36f9"
+              "value": "Bearer "
             },
             {
               "name": "Version",
@@ -317,7 +317,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer pit-1bb9356d-79e4-410d-a370-be52ea8d36f9"
+              "value": "Bearer "
             },
             {
               "name": "Version",
@@ -352,7 +352,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer pit-1bb9356d-79e4-410d-a370-be52ea8d36f9"
+              "value": "Bearer "
             },
             {
               "name": "Version",
